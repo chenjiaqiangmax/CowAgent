@@ -181,40 +181,54 @@ class WepilotChannel(ChatChannel):
             self.produce(context)
 
     # ---------- 出站 ----------
+    @staticmethod
+    def _is_dryrun(context) -> bool:
+        """演练注入的事件(_dryrun)沿链路传播: 它的回复在队列执行点同样被拦截。
+
+        否则演练注入(如 /api/autoreply/simulate)经 agent 产生的回复会真实
+        外发给被注入的会话 —— 演练就不安全了。
+        """
+        msg = context.get("msg") if context else None
+        raw = getattr(msg, "_rawmsg", None) or {}
+        return bool(raw.get("_dryrun"))
+
     def send(self, reply: Reply, context: Context):
         receiver = context.get("receiver") if context else None
         if not receiver:
             logger.warning("[wepilot] 回复缺少 receiver, 丢弃")
             return
+        dryrun = self._is_dryrun(context)
         if reply.type == ReplyType.TEXT:
             self._enqueue(self._CMD_TEXT, {
                 "conversation_id": receiver,
                 "content": reply.content,
-            })
+            }, dryrun=dryrun)
         elif reply.type == ReplyType.IMAGE_URL:
             path = self._download(str(reply.content))
             if path:
-                self._enqueue(self._CMD_IMAGE, {"file": path})
+                self._enqueue(self._CMD_IMAGE, {"file": path}, dryrun=dryrun)
         elif reply.type in (ReplyType.INFO, ReplyType.ERROR):
             # 提示/报错也走文本, 让用户在企微里能看到失败原因
             self._enqueue(self._CMD_TEXT, {
                 "conversation_id": receiver,
                 "content": reply.content,
-            })
+            }, dryrun=dryrun)
         else:
             logger.warning(f"[wepilot] 暂不支持的回复类型: {reply.type}")
 
-    def _enqueue(self, cmd_type, data):
+    def _enqueue(self, cmd_type, data, dryrun=False):
         """把指令交给 WePilot 队列(origin=agent)。
 
         拟人延迟/配额/回显闭环都在 WePilot 队列里做; 人工确认不适用
         agent 出站, 由 origin 语义代替(WePilot 侧按 origin 校验)。
+        dryrun=True 时队列执行点无条件拦截(演练注入的回复保持演练性质)。
         """
         body = {
             "type": cmd_type,
             "data": data,
             "confirmed": False,
             "origin": "agent",
+            "dryrun": bool(dryrun),
         }
         try:
             r = requests.post(
