@@ -112,6 +112,11 @@ CREDENTIAL_KEYS: Dict[str, tuple] = {
     const.DISCORD: (
         "discord_token",
     ),
+    const.WEPILOT: (
+        "wepilot_base_url",
+        "wepilot_self_id",
+        "wepilot_nick_name",
+    ),
 }
 
 # Short human labels used only to seed a new instance's default name (e.g.
@@ -126,6 +131,7 @@ _CHANNEL_TYPE_LABELS: Dict[str, str] = {
     const.TELEGRAM: "Telegram",
     const.SLACK: "Slack",
     const.DISCORD: "Discord",
+    const.WEPILOT: "WePilot",
 }
 
 # Channel types that actually support running more than one instance today.
@@ -140,6 +146,7 @@ MULTI_INSTANCE_READY = frozenset({
     const.DISCORD,
     const.WEIXIN,
     const.WECOM_BOT,
+    const.WEPILOT,
 })
 
 
