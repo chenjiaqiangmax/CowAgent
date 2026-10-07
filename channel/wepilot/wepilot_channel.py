@@ -28,7 +28,7 @@ import threading
 import requests
 import websocket  # websocket-client, CowAgent requirements 自带
 
-from bridge.context import ContextType
+from bridge.context import Context, ContextType
 from bridge.reply import Reply, ReplyType
 from channel.chat_channel import ChatChannel
 from channel.chat_message import ChatMessage
