@@ -101,6 +101,9 @@ def _build_channel(channel_type, multi_instance) -> Channel:
         from channel.weixin.weixin_channel import WeixinChannel
         ch = _fresh(WeixinChannel) if multi_instance else WeixinChannel()
         channel_type = const.WEIXIN
+    elif channel_type == "wepilot":
+        from channel.wepilot.wepilot_channel import WepilotChannel
+        ch = WepilotChannel()
     else:
         raise RuntimeError(f"unsupported channel_type: {channel_type!r}")
     ch.channel_type = channel_type
